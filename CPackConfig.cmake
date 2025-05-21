@@ -21,4 +21,8 @@ set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "solves equations")
 set(CPACK_GENERATOR "DEB;RPM;DMG;MSI")
 set(CPACK_RPM_PACKAGE_SUMMARY "solves equations")
 
+include(CPackWIX)
+set(CPACK_GENERATOR "DragNDrop;WIX") 
+set(CPACK_DMG_VOLUME_NAME "Solver Installer") 
+
 include(CPack)
