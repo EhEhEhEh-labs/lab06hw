@@ -1,6 +1,10 @@
 name: Build
 
-on: [push, pull_request]
+on: 
+  push:
+    tags:
+      - 'v*.*.*.*'  # Триггер на теги версий
+  pull_request:
 
 jobs:
   linux:
@@ -10,17 +14,75 @@ jobs:
     
     - name: Configure and Build
       run: |
-   
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR="DEB;RPM"
         cmake --build build --parallel
+
+    - name: Generate Linux packages
+      run: |
+        cmake --build build --target package  # Генерация DEB и RPM
+
+    - name: Upload Linux artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-packages
+        path: build/*.deb,build/*.rpm
 
   windows:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
-    
+
+    - name: Install WiX Toolset (для MSI)
+      run: choco install wixtoolset -y
+
     - name: Configure and Build
       run: |
-        cmake -B build -G "Visual Studio 17 2022" -A x64
+        cmake -B build -G "Visual Studio 17 2022" -A x64 -DCPACK_GENERATOR="MSI"
         cmake --build build --config Release --parallel
 
+    - name: Generate Windows package
+      run: |
+        cmake --build build --target package  # Генерация MSI
+
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-packages
+        path: build/*.msi
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure and Build
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR="DragNDrop"  # DMG
+        cmake --build build --parallel
+
+    - name: Generate macOS package
+      run: |
+        cmake --build build --target package  # Генерация DMG
+
+    - name: Upload macOS artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-packages
+        path: build/*.dmg
+
+  create_release:
+    runs-on: ubuntu-latest
+    needs: [linux, windows, macos]
+    permissions:
+      contents: write
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+
+    - name: Create Release
+      uses: ncipollo/release-action@v1.14.0
+      with:
+        artifacts: "artifacts/**/*"
+        token: ${{ secrets.GITHUB_TOKEN }}
