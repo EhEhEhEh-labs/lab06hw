@@ -1,15 +1,8 @@
-name: Build
-on:
-  push:
-jobs:
-  build-project:
-    name: Build Project
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.2
+cmake_minimum_required(VERSION 3.4)
+project(solver)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-      - name: Configure and solver
-        run: |
-          cmake -B build
-          cmake --build build
+include_directories(solver_application)
+
+include(CPackConfig.cmake)
